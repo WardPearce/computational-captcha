@@ -37,7 +37,9 @@ app = Litestar(
     on_startup=[init_mongo],
     middleware=[
         rate_limit_config.middleware,
-        DefineMiddleware(BearerAuthentication, exclude="schema"),
+        DefineMiddleware(
+            BearerAuthentication, exclude=["/schema", "/controller/captcha/generate"]
+        ),
     ],
     openapi_config=OpenAPIConfig(
         title=SETTINGS.open_api.title, version=SETTINGS.open_api.version
