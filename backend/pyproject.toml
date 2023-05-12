@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "computational-captcha"
+version = "0.1.0"
+description = ""
+authors = ["WardPearce <wardpearce@protonmail.com>"]
+readme = "README.md"
+packages = [{include = "computational_captcha"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+litestar = {extras = ["full"], version = "^2.0.0a6"}
+motor = "^3.1.2"
+argon2-cffi = "^21.3.0"
+motor-types = "^1.0.0b1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+server = "run:main"
