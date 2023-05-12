@@ -23,12 +23,16 @@ async def generate(
     captcha_secret = secrets.token_bytes(32)
     captcha_salt = secrets.token_bytes(16)
 
+    time_cost = SETTINGS.captcha.argon.time_cost
+    memory_cost = SETTINGS.captcha.argon.memory_cost
+    parallelism = SETTINGS.captcha.argon.parallelism
+
     captcha_hash = low_level.hash_secret(
         secret=captcha_secret,
         salt=captcha_salt,
-        time_cost=SETTINGS.captcha.argon.time_cost,
-        memory_cost=SETTINGS.captcha.argon.memory_cost,
-        parallelism=SETTINGS.captcha.argon.parallelism,
+        time_cost=time_cost,
+        memory_cost=memory_cost,
+        parallelism=parallelism,
         hash_len=32,
         type=low_level.Type.ID,
     )
@@ -43,6 +47,9 @@ async def generate(
         id=captcha_id,
         secret=b64encode(captcha_secret).decode(),
         salt=b64encode(captcha_salt).decode(),
+        time_cost=time_cost,
+        memory_cost=memory_cost,
+        parallelism=parallelism,
     )
 
 

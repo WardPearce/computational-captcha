@@ -1,7 +1,8 @@
+from computational_captcha.env import ArgonParameters
 from pydantic import BaseModel, Field
 
 
-class CaptchaModel(BaseModel):
+class CaptchaModel(ArgonParameters):
     id: str
     secret: str
     salt: str
