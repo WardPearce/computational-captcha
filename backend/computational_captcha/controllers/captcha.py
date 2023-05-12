@@ -3,9 +3,7 @@ from base64 import b64encode
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING
 
-from argon2.low_level import hash_secret
-from argon2.profiles import RFC_9106_LOW_MEMORY
-from bson import ObjectId
+from argon2 import low_level
 from computational_captcha.env import SETTINGS
 from computational_captcha.errors import (
     CaptchaComputedInvalidError,
@@ -19,46 +17,48 @@ if TYPE_CHECKING:
 
 
 @post(path="/generate")
-async def generate(state: "State") -> CaptchaModel:
+async def generate(
+    state: "State",
+) -> CaptchaModel:
     captcha_secret = secrets.token_bytes(32)
-    captcha_salt = secrets.token_bytes(RFC_9106_LOW_MEMORY.salt_len)
+    captcha_salt = secrets.token_bytes(16)
 
-    captcha_hash = hash_secret(
+    captcha_hash = low_level.hash_secret(
         secret=captcha_secret,
         salt=captcha_salt,
-        time_cost=RFC_9106_LOW_MEMORY.time_cost,
-        memory_cost=RFC_9106_LOW_MEMORY.memory_cost,
-        parallelism=RFC_9106_LOW_MEMORY.parallelism,
-        hash_len=RFC_9106_LOW_MEMORY.hash_len,
-        type=RFC_9106_LOW_MEMORY.type,
+        time_cost=SETTINGS.captcha.argon.time_cost,
+        memory_cost=SETTINGS.captcha.argon.memory_cost,
+        parallelism=SETTINGS.captcha.argon.parallelism,
+        hash_len=32,
+        type=low_level.Type.ID,
     )
 
-    expires = datetime.now(timezone.utc) + timedelta(
-        seconds=SETTINGS.captcha.expire_seconds
-    )
+    captcha_id = secrets.token_urlsafe(32)
 
-    result = await state.mongo.captcha.insert_one(
-        {"hash": captcha_hash.decode(), "expires": expires}
+    await state.redis.set(
+        captcha_id, captcha_hash.decode(), SETTINGS.captcha.expire_seconds
     )
 
     return CaptchaModel(
-        _id=str(result.inserted_id),
+        id=captcha_id,
         secret=b64encode(captcha_secret).decode(),
         salt=b64encode(captcha_salt).decode(),
-        expires=expires.timestamp(),
     )
 
 
-@post(path="/validate", status_code=200, raises=[CaptchaNotFoundError])
+@post(
+    path="/validate",
+    status_code=200,
+    raises=[CaptchaNotFoundError, CaptchaComputedInvalidError],
+)
 async def validate(data: ValidateModel, state: "State") -> Response:
-    search = {"_id": ObjectId(data.id)}
-    result = await state.mongo.captcha.find_one(search)
-    if not result:
+    correct_hash = await state.redis.get(data.id)
+    if not correct_hash:
         raise CaptchaNotFoundError()
 
-    await state.mongo.captcha.delete_one(search)
+    await state.redis.delete(data.id)
 
-    if result["hash"] != data.computed_hash:
+    if correct_hash != data.computed_hash:
         raise CaptchaComputedInvalidError()
 
     return Response(None, status_code=200)

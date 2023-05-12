@@ -9,9 +9,7 @@ packages = [{include = "computational_captcha"}]
 [tool.poetry.dependencies]
 python = "^3.11"
 litestar = {extras = ["full"], version = "^2.0.0a6"}
-motor = "^3.1.2"
 argon2-cffi = "^21.3.0"
-motor-types = "^1.0.0b1"
 
 [build-system]
 requires = ["poetry-core"]

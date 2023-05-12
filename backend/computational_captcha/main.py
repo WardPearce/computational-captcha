@@ -8,33 +8,38 @@ from litestar.config.cors import CORSConfig
 from litestar.middleware.base import DefineMiddleware
 from litestar.middleware.rate_limit import RateLimitConfig
 from litestar.openapi import OpenAPIConfig
-from motor import motor_asyncio
+from litestar.stores.redis import RedisStore
+from redis.asyncio import Redis
 
 if TYPE_CHECKING:
     from computational_captcha.types import State
-
 
 rate_limit_config = RateLimitConfig(
     rate_limit=SETTINGS.captcha.rate_limit, exclude=["/schema"]
 )
 
+cache_store = RedisStore(
+    redis=Redis(
+        host=SETTINGS.redis.host, port=SETTINGS.redis.port, db=SETTINGS.redis.db
+    )
+)
 
-async def init_mongo(state: "State") -> motor_asyncio.AsyncIOMotorCollection:
-    if not getattr("state", "mongo", None):
-        mongo = motor_asyncio.AsyncIOMotorClient(
-            SETTINGS.mongo.host, SETTINGS.mongo.port
-        )
-        await mongo.server_info(None)
-        state.mongo = cast(
-            motor_asyncio.AsyncIOMotorCollection, mongo[SETTINGS.mongo.collection]
-        )
 
-    return state.mongo
+async def init_redis(state: "State") -> RedisStore:
+    if not getattr("state", "redis", None):
+        state.redis = cache_store
+
+    return state.redis
+
+
+async def wipe_cache_on_shutdown() -> None:
+    await cache_store.delete_all()
 
 
 app = Litestar(
     route_handlers=[routes],
-    on_startup=[init_mongo],
+    on_startup=[init_redis],
+    before_shutdown=[wipe_cache_on_shutdown],
     middleware=[
         rate_limit_config.middleware,
         DefineMiddleware(
