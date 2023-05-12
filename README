@@ -1,0 +1,12 @@
+## Not production ready
+
+Make forms computationally challenging instead of turing test.
+
+## TODO
+
+- Implement OAuth
+- Add smart scaling
+- Simple UI
+- Containerize
+- Wrappers
+- Release
