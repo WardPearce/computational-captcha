@@ -1,15 +1,13 @@
-from pydantic import AnyHttpUrl, BaseModel, BaseSettings
+from typing import List, Tuple
+
+from litestar.middleware.rate_limit import DurationUnit
+from pydantic import BaseModel, BaseSettings, Field
 
 
 class MongoDB(BaseModel):
     host: str = "localhost"
     port: int = 27017
-    collection: str = "canary"
-
-
-class ProxiedUrls(BaseModel):
-    frontend: AnyHttpUrl = AnyHttpUrl(url="localhost", scheme="http")
-    backend: AnyHttpUrl = AnyHttpUrl(url="localhost/api", scheme="http")
+    collection: str = "computational-captcha"
 
 
 class OpenAPI(BaseModel):
@@ -17,17 +15,17 @@ class OpenAPI(BaseModel):
     version: str = "0.0.1"
 
 
-class Redis(BaseModel):
-    host: str = "redis://localhost/"
-    port: int = 6379
-    db: int = 0
+class Captcha(BaseModel):
+    allowed_hosts: List[str] = []
+    rate_limit: Tuple[DurationUnit, int] = ("minute", 30)
+    expire_seconds: int = 120
+    api_key: str = Field(..., min_length=32)
 
 
 class Settings(BaseSettings):
     mongo: MongoDB = MongoDB()
-    redis: Redis = Redis()
-    proxy_urls: ProxiedUrls = ProxiedUrls()
     open_api: OpenAPI = OpenAPI()
+    captcha: Captcha
 
     class Config:
         env_prefix = "cc_"

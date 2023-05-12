@@ -1,10 +1,12 @@
 import secrets
 from base64 import b64encode
+from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING
 
 from argon2.low_level import hash_secret
 from argon2.profiles import RFC_9106_LOW_MEMORY
 from bson import ObjectId
+from computational_captcha.env import SETTINGS
 from computational_captcha.errors import (
     CaptchaComputedInvalidError,
     CaptchaNotFoundError,
@@ -31,12 +33,19 @@ async def generate(state: "State") -> CaptchaModel:
         type=RFC_9106_LOW_MEMORY.type,
     )
 
-    result = await state.mongo.captcha.insert_one({"hash": captcha_hash.decode()})
+    expires = datetime.now(timezone.utc) + timedelta(
+        seconds=SETTINGS.captcha.expire_seconds
+    )
+
+    result = await state.mongo.captcha.insert_one(
+        {"hash": captcha_hash.decode(), "expires": expires}
+    )
 
     return CaptchaModel(
         _id=str(result.inserted_id),
         secret=b64encode(captcha_secret).decode(),
         salt=b64encode(captcha_salt).decode(),
+        expires=expires.timestamp(),
     )
 
 

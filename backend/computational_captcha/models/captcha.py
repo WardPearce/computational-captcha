@@ -5,6 +5,7 @@ class CaptchaModel(BaseModel):
     id: str = Field(..., alias="_id")
     secret: str
     salt: str
+    expires: float
 
 
 class ValidateModel(BaseModel):
