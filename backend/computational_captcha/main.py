@@ -8,6 +8,7 @@ from litestar.config.cors import CORSConfig
 from litestar.middleware.base import DefineMiddleware
 from litestar.middleware.rate_limit import RateLimitConfig
 from litestar.openapi import OpenAPIConfig
+from litestar.openapi.spec import Components, SecurityScheme, Tag
 from litestar.stores.redis import RedisStore
 from redis.asyncio import Redis
 
@@ -47,7 +48,23 @@ app = Litestar(
         ),
     ],
     openapi_config=OpenAPIConfig(
-        title=SETTINGS.open_api.title, version=SETTINGS.open_api.version
+        title=SETTINGS.open_api.title,
+        version=SETTINGS.open_api.version,
+        tags=[
+            Tag(name="public", description="This endpoint is for external users."),
+            Tag(
+                name="internal", description="This endpoint is for internal developers."
+            ),
+        ],
+        security=[{"Authorization": []}],
+        components=Components(
+            security_schemes={
+                "Authorization": SecurityScheme(
+                    type="http",
+                    scheme="bearer",
+                )
+            },
+        ),
     ),
     cors_config=CORSConfig(
         allow_origins=SETTINGS.captcha.allowed_hosts,

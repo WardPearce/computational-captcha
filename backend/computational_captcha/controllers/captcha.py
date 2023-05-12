@@ -1,6 +1,5 @@
 import secrets
 from base64 import b64encode
-from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING
 
 from argon2 import low_level
@@ -11,12 +10,13 @@ from computational_captcha.errors import (
 )
 from computational_captcha.models.captcha import CaptchaModel, ValidateModel
 from litestar import Response, Router, post
+from litestar.exceptions import NotAuthorizedException
 
 if TYPE_CHECKING:
     from computational_captcha.types import State
 
 
-@post(path="/generate")
+@post(path="/generate", security=[{}], tags=["public"])
 async def generate(
     state: "State",
 ) -> CaptchaModel:
@@ -49,7 +49,8 @@ async def generate(
 @post(
     path="/validate",
     status_code=200,
-    raises=[CaptchaNotFoundError, CaptchaComputedInvalidError],
+    raises=[CaptchaNotFoundError, CaptchaComputedInvalidError, NotAuthorizedException],
+    tags=["internal"],
 )
 async def validate(data: ValidateModel, state: "State") -> Response:
     correct_hash = await state.redis.get(data.id)
