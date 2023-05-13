@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 
 
 class GoalModel(BaseModel):
-    sha256: str
+    blake2b: str
     order: int
 
 

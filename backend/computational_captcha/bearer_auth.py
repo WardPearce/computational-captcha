@@ -1,9 +1,10 @@
 import base64
 import binascii
+import secrets
 
-from argon2 import PasswordHasher
-from argon2.exceptions import VerificationError
 from computational_captcha.env import SETTINGS
+from cryptography.exceptions import InvalidSignature
+from cryptography.hazmat.primitives import hashes, hmac
 from litestar.connection import ASGIConnection
 from litestar.exceptions import NotAuthorizedException
 from litestar.middleware.authentication import (
@@ -12,9 +13,6 @@ from litestar.middleware.authentication import (
 )
 
 API_KEY_HEADER = "Authorization"
-# Not used for password storage, just to help against timing attacks.
-PASSWORD_HASHER = PasswordHasher(memory_cost=100)
-HASHED_API_KEY = PASSWORD_HASHER.hash(SETTINGS.captcha.api_key)
 
 
 class BearerAuthentication(AbstractAuthenticationMiddleware):
@@ -36,9 +34,17 @@ class BearerAuthentication(AbstractAuthenticationMiddleware):
 
         username, _, password = decoded.partition(":")
 
+        key = secrets.token_bytes()
+
+        given_password = hmac.HMAC(key, hashes.SHA256())
+        given_password.update(password.encode())
+
+        correct_password = hmac.HMAC(key, hashes.SHA256())
+        correct_password.update(SETTINGS.captcha.api_key.encode())
+
         try:
-            PASSWORD_HASHER.verify(HASHED_API_KEY, password)
-        except VerificationError:
+            correct_password.verify(given_password.finalize())
+        except InvalidSignature:
             raise NotAuthorizedException()
 
         return AuthenticationResult(user=username, auth=password)

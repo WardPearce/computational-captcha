@@ -1,4 +1,3 @@
-import hashlib
 import secrets
 from base64 import b64encode
 from typing import TYPE_CHECKING
@@ -10,6 +9,7 @@ from computational_captcha.errors import (
     CaptchaNotFoundError,
 )
 from computational_captcha.models.captcha import CaptchaModel, GoalModel, ValidateModel
+from cryptography.hazmat.primitives import hashes
 from litestar import Response, Router, post
 from litestar.exceptions import NotAuthorizedException
 
@@ -51,9 +51,10 @@ async def generate(
             type=low_level.Type.ID,
         )
 
-        goals.append(
-            GoalModel(sha256=hashlib.sha256(captcha_hash).hexdigest(), order=index)
-        )
+        blake2b_digest = hashes.Hash(hashes.BLAKE2b(digest_size=64))
+        blake2b_digest.update(captcha_hash)
+
+        goals.append(GoalModel(blake2b=blake2b_digest.finalize().hex(), order=index))
         argon_hashes.append(captcha_hash)
 
         await state.redis.set(

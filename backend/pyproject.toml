@@ -10,6 +10,7 @@ packages = [{include = "computational_captcha"}]
 python = "^3.11"
 litestar = {extras = ["full"], version = "^2.0.0a6"}
 argon2-cffi = "^21.3.0"
+cryptography = "^40.0.2"
 
 [build-system]
 requires = ["poetry-core"]
