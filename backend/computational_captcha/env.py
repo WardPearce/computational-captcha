@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 from argon2.profiles import RFC_9106_LOW_MEMORY
 from litestar.middleware.rate_limit import DurationUnit
@@ -18,7 +18,7 @@ class OpenAPI(BaseModel):
 
 class ArgonParameters(BaseModel):
     time_cost: int = RFC_9106_LOW_MEMORY.time_cost
-    memory_cost: int = RFC_9106_LOW_MEMORY.memory_cost
+    memory_cost: int = round(RFC_9106_LOW_MEMORY.memory_cost / 10)
     parallelism: int = RFC_9106_LOW_MEMORY.parallelism
 
 
@@ -27,8 +27,9 @@ class Captcha(BaseModel):
     rate_limit: Tuple[DurationUnit, int] = ("minute", 30)
     expire_seconds: int = 120
     api_key: str = Field(..., min_length=32)
-    groups: List[str] = ["main"]
     argon: ArgonParameters = ArgonParameters()
+    required_secrets: int = 3
+    provided_secrets: int = 10
 
 
 class Settings(BaseSettings):

@@ -12,7 +12,8 @@ from litestar.middleware.authentication import (
 )
 
 API_KEY_HEADER = "Authorization"
-PASSWORD_HASHER = PasswordHasher()
+# Not used for password storage, just to help against timing attacks.
+PASSWORD_HASHER = PasswordHasher(memory_cost=100)
 HASHED_API_KEY = PASSWORD_HASHER.hash(SETTINGS.captcha.api_key)
 
 

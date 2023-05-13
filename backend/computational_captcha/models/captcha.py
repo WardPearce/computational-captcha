@@ -1,13 +1,26 @@
-from computational_captcha.env import ArgonParameters
+from typing import List
+
+from computational_captcha.env import SETTINGS, ArgonParameters
 from pydantic import BaseModel, Field
 
 
+class GoalModel(BaseModel):
+    sha256: str
+    order: int
+
+
 class CaptchaModel(ArgonParameters):
-    id: str
-    secret: str
     salt: str
+    secrets: List[str] = Field(..., max_items=SETTINGS.captcha.provided_secrets)
+    goals: List[GoalModel]
+
+
+class CompletedGoalModel(BaseModel):
+    secret: str = Field(..., min_length=42, max_length=42)
+    argon2: str = Field(..., max_length=42)
 
 
 class ValidateModel(BaseModel):
-    id: str = Field(..., regex=r"^[a-fA-F0-9]{24}$")
-    computed_hash: str = Field(..., max_length=42)
+    completed_goals: List[CompletedGoalModel] = Field(
+        ..., max_items=SETTINGS.captcha.required_secrets
+    )

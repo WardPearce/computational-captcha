@@ -16,7 +16,8 @@ if TYPE_CHECKING:
     from computational_captcha.types import State
 
 rate_limit_config = RateLimitConfig(
-    rate_limit=SETTINGS.captcha.rate_limit, exclude=["/schema"]
+    rate_limit=SETTINGS.captcha.rate_limit,
+    exclude=["/schema", "/controller/captcha/validate"],
 )
 
 cache_store = RedisStore(
